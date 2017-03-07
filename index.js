@@ -32,31 +32,28 @@ const connectClient = () => {
 }
 
 const connectBoard = () => {
-  five.Board().on("ready", () => {
+  five.Board().on('ready', () => {
     button = new five.Button({
       pin: 53,
       isPullup: true
     });
 
-    led = new five.Led(13);
-
-    button.on("down", function (value) {
-      led.on();
-      client.rpc.send(client.services.spaceCenter.controlActivateNextStage(game.vessel.control.id));
-      console.log('down');
+    var joystick = new five.Joystick({
+      pins: ['A0', 'A1']
     });
 
-    button.on("up", function () {
-      led.off();
-      console.log('up');
+    button.on('down', function (value) {
+      client.rpc.send(client.services.spaceCenter.controlActivateNextStage(game.vessel.control.id));
+    });
+
+    joystick.on('change', function () {
+      client.rpc.send(client.services.spaceCenter.controlSetPitch(game.vessel.control.id, this.x));
+      client.rpc.send(client.services.spaceCenter.controlSetRoll(game.vessel.control.id, this.y));
     });
 
     console.log('Board ready');
   });
 }
-
-
-
 
 const getActiveVesselComplete = (response) => {
   game.vessel = {
@@ -70,26 +67,11 @@ const getActiveVesselControlComplete = (response) => {
   game.vessel.control = {
     id: getFirstResult(response)
   };
-  replaceMessageHandler(getThrottleValueComplete);
-  client.rpc.send(client.services.spaceCenter.controlGetThrottle(game.vessel.control.id));
-}
-
-const getThrottleValueComplete = (response) => {
-  game.vessel.control.throttle = getFirstResult(response);
-  console.log(util.format("Updating throttle value from %s to 1", game.vessel.control.throttle));
-  replaceMessageHandler(setThrottleToFullComplete);
-  var call = client.services.spaceCenter.controlSetThrottle(game.vessel.control.id, 1);
-  client.rpc.send(call);
+  replaceMessageHandler(() => {});
 }
 
 const setThrottleToFullComplete = (response) => {
   replaceMessageHandler(launched);
-  // client.rpc.send(client.services.spaceCenter.controlActivateNextStage(game.vessel.control.id));
-}
-
-const launched = (response) => {
-  console.log("launched!!");
-  process.exit(0);
 }
 
 const getFirstResult = (response) => {
