@@ -1,0 +1,21 @@
+{
+  "name": "ksp-arduino-controller",
+  "version": "0.0.1",
+  "description": "An arduino driven controller for Kerbal Space Program using Johnny-Five",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Arduino",
+    "Johnny-Five",
+    "Kerbal",
+    "KSP",
+    "Controller"
+  ],
+  "author": "Jake Helme",
+  "license": "MIT",
+  "dependencies": {
+    "johnny-five": "^0.10.6"
+  }
+}
