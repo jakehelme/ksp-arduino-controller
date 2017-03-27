@@ -24,7 +24,9 @@
   },
   "homepage": "https://github.com/jakehelme/ksp-adrduino-controller#readme",
   "dependencies": {
+    "async": "^2.2.0",
     "johnny-five": "^0.10.6",
-    "krpc-node": "github:exigentcoder/krpc-node#multi-stream"
+    "krpc-node": "github:exigentcoder/krpc-node",
+    "moment": "^2.18.1"
   }
 }

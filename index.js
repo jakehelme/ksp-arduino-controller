@@ -1,39 +1,157 @@
 'use strict';
 
 let util = require('util');
+let async = require('async');
+let moment = require('moment');
 let five = require('johnny-five');
 let Client = require('krpc-node');
 
-let client, joystick2Button, led;
-
-let game = {};
+let joystick2Button, led;
 
 const step = 0.001;
 const joystickDeadzone = 0.03;
 const inputScale = 10;
 
-const init = () => {
-  connectClient();
+let client = null;
+let state = {
+    clientId: null,
+    vessel: {
+        id: null,
+        controlId: null,
+        surfaceReference: null,
+        surfaceFlightId: null,
+        throttle: null
+    }
+};
+
+let logInterval = {
+    period: 'seconds',
+    value: 1
+};
+
+let nextLogTimer = null;
+
+
+
+const clientCreated = (err, clientCreated) => {
+  if(err) {
+    throw err;
+  }
+
+  client = clientCreated;
+
+  async.waterfall([
+    getClientIdAndActiveVessel,
+    connectToStreamServer,
+    getVesselControl,
+    getThrottle,
+    connectBoard
+  ], function (err) {
+    if (err) {
+      throw err;
+    }
+    client.stream.on('message', streamUpdate);
+    incrementNextLogTimer();
+  });
 }
 
-const connectClient = () => {
-  client = Client();
+Client(null, clientCreated);
 
-  client.rpc.on('open', () => {
-    console.log('Connected to KSP');
-    client.rpc.on('message', getActiveVesselComplete);
-    client.rpc.send(client.services.spaceCenter.getActiveVessel());
-  });
+const getFirstResult = (response) => {
+    return getResultN(response, 0);
+}
 
-  client.rpc.on('error', function (err) {
-    console.log(util.format('Error : %j', err));
-    process.exit(1);
-  });
+const getResultN = (response, n) => {
+    if (response.error) {
+        throw response.error;
+    }
+    let result = response.results[n];
+    if (result.error) {
+        throw result.error;
+    }
+    return result.value;
+}
 
-  client.rpc.on('close', function (event) {
-    console.log(util.format('Connection Closed : %j', event));
-    process.exit(1);
+const getClientIdAndActiveVessel = (callback) => {
+    let calls = [
+        client.services.krpc.getClientId(),
+        client.services.spaceCenter.getActiveVessel()
+    ];
+    client.send(calls, function (err, response) {
+        if (err) {
+            return callback(err);
+        }
+        state.clientId = getResultN(response, 0).toString('base64');
+        state.vessel = {
+            id: getResultN(response, 1)
+        };
+        return callback();
+    });
+}
+
+const connectToStreamServer = (callback) => {
+    client.connectToStreamServer(state.clientId, function (err) {
+        return callback(err);
+    });
+}
+
+const getVesselControl = (callback) => {
+    client.send(client.services.spaceCenter.vesselGetControl(state.vessel.id), function (err, response) {
+        if (err) {
+            return callback(err);
+        }
+        state.vessel.controlId = getFirstResult(response);
+        return callback();
+    });
+}
+
+const getThrottle = (callback) => {
+  client.send(client.services.spaceCenter.controlGetThrottle(state.vessel.controlId), function (err, response) {
+    if(err) {
+      return callback(err);
+    }
+    state.vessel.throttle = getFirstResult(response);
+    return callback();
   });
+}
+
+const getVesselGetSurfaceReferenceFrame = (callback) => {
+    client.send(client.services.spaceCenter.vesselGetSurfaceReferenceFrame(state.vessel.id), function (err, response) {
+        if (err) {
+            return callback(err);
+        }
+        state.vessel.surfaceReference = getFirstResult(response);
+        return callback();
+    });
+}
+
+const getVesselFlight = (callback) => {
+    client.send(client.services.spaceCenter.vesselFlight(state.vessel.id, state.vessel.surfaceReference), function (err, response) {
+        if (err) {
+            return callback(err);
+        }
+        state.vessel.surfaceFlightId = getFirstResult(response);
+        return callback();
+    });
+}
+
+const addPitchToStream = (callback) => {
+    let getThrottle = client.services.spaceCenter.flightGetPitch(state.vessel.surfaceFlightId);
+    client.addStream(getThrottle, "Pitch", throttleStreamAdded);
+    function throttleStreamAdded(err) {
+        return callback(err);
+    }
+}
+
+const streamUpdate = (streamState) => {
+    if (moment.utc().isAfter(nextLogTimer)) {
+        console.log(streamState);
+        incrementNextLogTimer();
+    }
+}
+
+const incrementNextLogTimer = () => {
+    nextLogTimer = moment.utc().add(logInterval.value, logInterval.period);
 }
 
 const connectBoard = () => {
@@ -55,69 +173,32 @@ const connectBoard = () => {
     });
 
     joystick2Button.on('down', function (value) {
-      client.rpc.send(client.services.spaceCenter.controlActivateNextStage(game.vessel.control.id));
+      client.send([client.services.spaceCenter.controlActivateNextStage(state.vessel.controlId)]);
       console.log('Stage fired');
     });
 
     toggle.on("close", function () {
-      client.rpc.send(client.services.spaceCenter.controlSetSas(game.vessel.control.id, true));
+      client.send(client.services.spaceCenter.controlSetSas(state.vessel.controlId, true));
       console.log("SAS on");
     });
 
     toggle.on("open", function () {
-      client.rpc.send(client.services.spaceCenter.controlSetSas(game.vessel.control.id, false));
+      client.send(client.services.spaceCenter.controlSetSas(state.vessel.controlId, false));
       console.log("SAS off");
     });
 
     joystick1.on('data', function () {
-      client.rpc.send(client.services.spaceCenter.controlSetYaw(game.vessel.control.id, getJoystickValue(this.x)));
-      client.rpc.send(client.services.spaceCenter.controlSetThrottle(game.vessel.control.id, changeThrottle(this.y)));
+      client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
+      client.send(client.services.spaceCenter.controlSetThrottle(state.vessel.controlId, changeThrottle(this.y)));
     });
 
     joystick2.on('data', function () {
-      client.rpc.send(client.services.spaceCenter.controlSetRoll(game.vessel.control.id, getJoystickValue(this.x)));
-      client.rpc.send(client.services.spaceCenter.controlSetPitch(game.vessel.control.id, getJoystickValue(this.y)));
+      client.send(client.services.spaceCenter.controlSetRoll(state.vessel.controlId, getJoystickValue(this.x)));
+      client.send(client.services.spaceCenter.controlSetPitch(state.vessel.controlId, getJoystickValue(this.y)));
     });
 
     console.log('Board ready');
   });
-}
-
-const getActiveVesselComplete = (response) => {
-  game.vessel = {
-    id: getFirstResult(response)
-  };
-  replaceMessageHandler(getActiveVesselControlComplete);
-  client.rpc.send(client.services.spaceCenter.vesselGetControl(game.vessel.id));
-}
-
-const getActiveVesselControlComplete = (response) => {
-  game.vessel.control = {
-    id: getFirstResult(response)
-  };
-  replaceMessageHandler(getThrottleComplete);
-  client.rpc.send(client.services.spaceCenter.controlGetThrottle(game.vessel.control.id));
-  connectBoard();
-}
-
-const getThrottle = () => {
-  replaceMessageHandler(getThrottleComplete);
-  client.rpc.send(client.services.spaceCenter.controlGetThrottle(game.vessel.control.id));
-}
-
-const getThrottleComplete = (response) => {
-  game.vessel.control.throttle = getFirstResult(response);
-  replaceMessageHandler(() => { });
-}
-
-const getFirstResult = (response) => {
-  var result = response.results[0];
-  return result.value;
-}
-
-const replaceMessageHandler = (fn) => {
-  client.rpc.emitter.removeAllListeners('message');
-  client.rpc.on('message', fn);
 }
 
 const getJoystickValue = (input) => {
@@ -132,17 +213,15 @@ const getJoystickValue = (input) => {
 
 const changeThrottle = (input) => {
   if(input > joystickDeadzone) {
-    game.vessel.control.throttle += (step + (input/inputScale));
+    state.vessel.throttle += (step + (input/inputScale));
   } else if (input < -joystickDeadzone) {
-    game.vessel.control.throttle -= (step - (input/inputScale));
+    state.vessel.throttle -= (step - (input/inputScale));
   }
 
-  if(game.vessel.control.throttle > 1){
-    game.vessel.control.throttle = 1;
-  } else if (game.vessel.control.throttle < 0) {
-    game.vessel.control.throttle = 0;
+  if(state.vessel.throttle > 1){
+    state.vessel.throttle = 1;
+  } else if (state.vessel.throttle < 0) {
+    state.vessel.throttle = 0;
   }
-  return game.vessel.control.throttle;
+  return state.vessel.throttle;
 }
-
-init();
