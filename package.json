@@ -4,6 +4,7 @@
   "description": "An arduino driven controller for Kerbal Space Program using Johnny-Five",
   "main": "index.js",
   "scripts": {
+    "start": "node ./src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -24,9 +25,9 @@
   },
   "homepage": "https://github.com/jakehelme/ksp-adrduino-controller#readme",
   "dependencies": {
-    "async": "^2.2.0",
-    "johnny-five": "^0.10.6",
-    "krpc-node": "github:exigentcoder/krpc-node",
-    "moment": "^2.18.1"
+    "async": "2.5.0",
+    "johnny-five": "0.11.3",
+    "krpc-node": "2.0.1",
+    "moment": "2.18.1"
   }
 }
