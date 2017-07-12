@@ -6,7 +6,6 @@ let moment = require('moment');
 let five = require('johnny-five');
 let Client = require('krpc-node');
 
-// let joystick2Button, led;
 let lcd;
 
 const step = 0.001;
@@ -224,7 +223,6 @@ const connectBoard = (callback) => {
 
         joystick1.on('change', function () {
             client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
-            // client.send(client.services.spaceCenter.controlSetThrottle(state.vessel.controlId, changeThrottle(this.y)));
         });
 
         joystick2.on('change', function () {
@@ -250,21 +248,6 @@ const getJoystickValue = (input) => {
         return 0.0;
     }
 }
-
-// const changeThrottle = (input) => {
-//     if (input > joystickDeadzone) {
-//         state.vessel.throttle += (step + (input / inputScale));
-//     } else if (input < -joystickDeadzone) {
-//         state.vessel.throttle -= (step - (input / inputScale));
-//     }
-
-//     if (state.vessel.throttle > 1) {
-//         state.vessel.throttle = 1;
-//     } else if (state.vessel.throttle < 0) {
-//         state.vessel.throttle = 0;
-//     }
-//     return state.vessel.throttle;
-// }
 
 const getInitialInfo = (callback) => {
     let calls = [
