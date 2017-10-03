@@ -1,7 +1,7 @@
 const five = require('johnny-five');
 
 const joystickDeadzone = 0.03;
-let lcd;
+let lcd = null;
 
 const getJoystickValue = (input) => {
 	if (input > joystickDeadzone) {
@@ -18,45 +18,45 @@ const printToLcd = (input) => {
 };
 
 const connectBoard = (client, state, callback) => {
-	let board = five.Board({
+	const board = five.Board({
 		repl: false,
 		debug: false,
 	});
 	board.on('ready', () => {
 		console.log('board connected');
 
-		let abort = new five.Switch(40);
-		let toggle1 = new five.Switch(44);
-		let toggle2 = new five.Switch(43);
-		let toggle3 = new five.Switch(42);
-		let toggle4 = new five.Switch(41);
-		let action1 = new five.Button(53);
-		let action2 = new five.Button(52);
-		let action3 = new five.Button(51);
-		let action4 = new five.Button(50);
-		let action5 = new five.Button(49);
-		let action6 = new five.Button(48);
-		let action7 = new five.Button(47);
-		let action8 = new five.Button(46);
-		let action9 = new five.Button(45);
-		let slider = new five.Sensor('A6');
+		const abort = new five.Switch(40);
+		const toggle1 = new five.Switch(44);
+		const toggle2 = new five.Switch(43);
+		const toggle3 = new five.Switch(42);
+		const toggle4 = new five.Switch(41);
+		const action1 = new five.Button(53);
+		const action2 = new five.Button(52);
+		const action3 = new five.Button(51);
+		const action4 = new five.Button(50);
+		const action5 = new five.Button(49);
+		const action6 = new five.Button(48);
+		const action7 = new five.Button(47);
+		const action8 = new five.Button(46);
+		const action9 = new five.Button(45);
+		const slider = new five.Sensor('A6');
 
-		let joystick1Button = new five.Button({
+		const joystick1Button = new five.Button({
 			pin: 39,
 			isPullup: true
 		});
 
-		let joystick2Button = new five.Button({
+		const joystick2Button = new five.Button({
 			pin: 38,
 			isPullup: true
 		});
 
-		let joystick1 = new five.Joystick({
+		const joystick1 = new five.Joystick({
 			pins: ['A0', 'A1'],
 			invertY: true
 		});
 
-		let joystick2 = new five.Joystick({
+		const joystick2 = new five.Joystick({
 			pins: ['A2', 'A3']
 		});
 
@@ -168,7 +168,7 @@ const connectBoard = (client, state, callback) => {
 	});
 };
 
-module.exports = { 
+module.exports = {
 	connectBoard,
-	printToLcd   
+	printToLcd
 };
