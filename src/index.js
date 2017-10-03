@@ -18,16 +18,17 @@ let state = {
     vessel: {
         id: null,
         controlId: null,
-        surfaceReference: null,
-        surfaceVelocityReference: null,
-        surfaceFlightId: null,
-        surfaceVelocityFlightId: null
-    }
+        kerbinFlight: null,
+        kerbinNonRotatingFlight: null
+    },
+    celestialBodies: null,
+    kerbinReferenceFrame: null,
+    kerbinNonRotatingReferenceFrame: null
 };
 
 let logInterval = {
-    period: 'seconds',
-    value: 1
+    period: 'milliseconds',
+    value: 200
 };
 
 let nextLogTimer = null;
@@ -43,7 +44,8 @@ const clientCreated = (err, clientCreated) => {
             getInitialInfo,
             connectToStreamServer,
             getVesselInfo,
-            getMoreVesselInfo,
+            getKerbinReferenceFrames,
+            getKerbinFlight,
             addSpeedToStream,
             connectBoard
         ],
@@ -77,10 +79,21 @@ const getResultN = (response, n) => {
 const streamUpdate = (streamState) => {
     if (moment.utc().isAfter(nextLogTimer)) {
         if (typeof lcd !== 'undefined') {
-            lcd.clear().print(`Speed: ${streamState.speed}`);
+            // lcd.clear().print(`Speed: ${Math.round(streamState.speed * 10) / 10} m/s`);
+            
+            lcd.home().print(getLcdString(streamState.speed));
         }
         incrementNextLogTimer();
     }
+}
+
+const getLcdString = (value) => {
+    const outputString = `Speed: ${Math.round(value * 10) / 10} m/s`;
+    return pad(outputString);
+}
+
+const pad = (str) => {
+    return (str + Array(16).join(' ')).substring(0, 16);
 }
 
 const incrementNextLogTimer = () => {
@@ -252,7 +265,8 @@ const getJoystickValue = (input) => {
 const getInitialInfo = (callback) => {
     let calls = [
         client.services.krpc.getClientId(),
-        client.services.spaceCenter.getActiveVessel()
+        client.services.spaceCenter.getActiveVessel(),
+        client.services.spaceCenter.getBodies()
     ];
     client.send(calls, function (err, response) {
         if (err) {
@@ -262,6 +276,7 @@ const getInitialInfo = (callback) => {
         state.vessel = {
             id: getResultN(response, 1)
         };
+        state.celestialBodies = getResultN(response, 2);
         return callback();
     });
 }
@@ -276,8 +291,6 @@ const connectToStreamServer = (callback) => {
 const getVesselInfo = (callback) => {
     let calls = [
         client.services.spaceCenter.vesselGetControl(state.vessel.id),
-        client.services.spaceCenter.vesselGetSurfaceReferenceFrame(state.vessel.id),
-        client.services.spaceCenter.vesselGetSurfaceVelocityReferenceFrame(state.vessel.id)
     ];
 
     client.send(calls, function (err, response) {
@@ -285,31 +298,43 @@ const getVesselInfo = (callback) => {
             return callback(err);
         }
         state.vessel.controlId = getFirstResult(response);
-        state.vessel.surfaceReference = getResultN(response, 1);
-        state.vessel.surfaceVelocityReference = getResultN(response, 2);
         return callback();
     });
 }
 
-const getMoreVesselInfo = (callback) => {
+const getKerbinReferenceFrames = (callback) => {
     let calls = [
-        client.services.spaceCenter.controlGetThrottle(state.vessel.controlId),
-        client.services.spaceCenter.vesselFlight(state.vessel.id, state.vessel.surfaceReference),
-        client.services.spaceCenter.vesselFlight(state.vessel.id, state.vessel.surfaceVelocityReference)
+        client.services.spaceCenter.celestialBodyGetReferenceFrame(state.celestialBodies.Kerbin),
+        client.services.spaceCenter.celestialBodyGetNonRotatingReferenceFrame(state.celestialBodies.Kerbin)
     ];
 
     client.send(calls, (err, response) => {
         if (err) {
             return callback(err);
         }
-        state.vessel.throttle = getFirstResult(response);
-        state.vessel.surfaceFlightId = getResultN(response, 1);
-        state.vessel.surfaceVelocityFlightId = getResultN(response, 2);
+        state.kerbinReferenceFrame = getFirstResult(response);
+        state.kerbinNonRotatingReferenceFrame = getResultN(response, 1);
+        return callback();
+    });
+};
+
+const getKerbinFlight = (callback) => {
+    let calls = [
+        client.services.spaceCenter.vesselFlight(state.vessel.id, state.kerbinReferenceFrame),
+        client.services.spaceCenter.vesselFlight(state.vessel.id, state.kerbinNonRotatingReferenceFrame)
+    ];
+
+    client.send(calls, (err, response) => {
+        if (err) {
+            return callback(err);
+        }
+        state.vessel.kerbinFlight = getFirstResult(response);
+        state.vessel.kerbinNonRotatingFlight = getResultN(response, 1);
         return callback();
     });
 };
 
 const addSpeedToStream = (callback) => {
-    const call = client.services.spaceCenter.flightGetSpeed(state.vessel.surfaceVelocityFlightId);
+    const call = client.services.spaceCenter.flightGetSpeed(state.vessel.kerbinFlight);
     client.addStream(call, 'speed', callback);
 }
