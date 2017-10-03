@@ -8,7 +8,3 @@ Wire up the controller as shown in the [Fritzing](http://fritzing.org) diagram b
 npm install
 npm start
 ```
-
-I will update the diagram below soon. I promise.
-
-![Fritzing Diagram](/docs/fritzing_bb.png "Fritzing diagram (outdated)")
