@@ -10,7 +10,7 @@ const logInterval = {
 
 const processStreamUpdate = (streamState) => {
 	if (moment.utc().isAfter(nextLogTimer)) {
-		printToLcd(generateDisplayString(streamState.speed, 2, 'Spd', 'm/s'));
+		printToLcd(generateDisplayString(streamState.speed, 1, 'Spd', 'm/s'));
 		incrementNextLogTimer();
 	}
 };

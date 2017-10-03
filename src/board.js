@@ -1,7 +1,18 @@
 const five = require('johnny-five');
+const clamp = require('./util/clamp');
 
 const joystickDeadzone = 0.03;
+let isCameraControlMode = false;
 let lcd = null;
+
+const cameraModes = ['Free', 'Chase', 'Locked', 'Orbital', 'Map'];
+let cameraModeIndex = 0;
+
+const getNextCameraMode = () => {
+	cameraModeIndex = (cameraModeIndex + 1) % cameraModes.length;
+	return cameraModes[cameraModeIndex];
+};
+
 
 const getJoystickValue = (input) => {
 	if (input > joystickDeadzone) {
@@ -67,7 +78,7 @@ const connectBoard = (client, state, callback) => {
 		});
 
 		joystick1Button.on('down', function () {
-			client.send([client.services.spaceCenter.controlActivateNextStage(state.vessel.controlId)]);
+			client.send([client.services.spaceCenter.cameraSetMode(state.camera.id, getNextCameraMode())]);
 		});
 
 		joystick2Button.on('down', function () {
@@ -83,11 +94,11 @@ const connectBoard = (client, state, callback) => {
 		});
 
 		toggle2.on('close', function () {
-			client.send(client.services.spaceCenter.controlSetBrakes(state.vessel.controlId, true));
+			isCameraControlMode = true;
 		});
 
 		toggle2.on('open', function () {
-			client.send(client.services.spaceCenter.controlSetBrakes(state.vessel.controlId, false));
+			isCameraControlMode = false;
 		});
 
 		toggle3.on('close', function () {
@@ -151,16 +162,34 @@ const connectBoard = (client, state, callback) => {
 		});
 
 		joystick1.on('change', function () {
-			client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
+			if(isCameraControlMode){
+				state.camera.distance = clamp(state.camera.distance + getJoystickValue(this.y), state.camera.minDistance, state.camera.maxDistance);
+				client.send(client.services.spaceCenter.cameraSetDistance(state.camera.id, state.camera.distance));
+			} else {
+				client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
+			}
 		});
 
 		joystick2.on('change', function () {
-			client.send(client.services.spaceCenter.controlSetRoll(state.vessel.controlId, getJoystickValue(this.x)));
-			client.send(client.services.spaceCenter.controlSetPitch(state.vessel.controlId, getJoystickValue(this.y)));
+			if(isCameraControlMode) {
+				state.camera.pitch = clamp(state.camera.pitch + getJoystickValue(this.y), state.camera.minPitch, state.camera.maxPitch);
+				state.camera.heading += getJoystickValue(this.x);
+				client.send(client.services.spaceCenter.cameraSetPitch(state.camera.id, state.camera.pitch));
+				client.send(client.services.spaceCenter.cameraSetHeading(state.camera.id, state.camera.heading));
+			} else {
+				client.send(client.services.spaceCenter.controlSetRoll(state.vessel.controlId, getJoystickValue(this.x)));
+				client.send(client.services.spaceCenter.controlSetPitch(state.vessel.controlId, getJoystickValue(this.y)));
+			}
 		});
-
+		
 		slider.scale([0, 1]).on('change', function () {
-			client.send(client.services.spaceCenter.controlSetThrottle(state.vessel.controlId, 1 - this.value));
+			let newValue = 1 - this.value;
+			if (newValue > 0.97) {
+				newValue = 1;
+			} else if(newValue < 0.03) {
+				newValue = 0;
+			}
+			client.send(client.services.spaceCenter.controlSetThrottle(state.vessel.controlId, newValue));
 		});
 
 		console.log('Board ready');

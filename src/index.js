@@ -1,12 +1,30 @@
 const async = require('async');
 const Client = require('krpc-node');
 const { processStreamUpdate, incrementNextLogTimer } = require('./streams.js');
-const { getInitialInfo,	connectToStreamServer, getVesselInfo, getKerbinReferenceFrames, getKerbinFlight, addSpeedToStream } = require('./setup');
 const { connectBoard } = require('./board');
+const { 
+	getInitialInfo,
+	connectToStreamServer, 
+	getVesselInfo, 
+	getCameraInfo,
+	getKerbinReferenceFrames, 
+	getKerbinFlight, 
+	addSpeedToStream 
+} = require('./setup');
 
 let client = null;
 let state = {
 	clientId: null,
+	camera: {
+		id: null,
+		minPitch: null,
+		maxPitch: null,
+		minDistance: null,
+		maxDistance: null,
+		pitch: null,
+		heading: null,
+		distance: null
+	},
 	vessel: {
 		id: null,
 		controlId: null,
@@ -29,6 +47,7 @@ const clientCreated = (err, clientCreated) => {
 			(callback) => { getInitialInfo(client, state, callback); },
 			(callback) => { connectToStreamServer(client, state, callback); },
 			(callback) => { getVesselInfo(client, state, callback); },
+			(callback) => { getCameraInfo(client, state, callback); },
 			(callback) => { getKerbinReferenceFrames(client, state, callback); },
 			(callback) => { getKerbinFlight(client, state, callback); },
 			(callback) => { addSpeedToStream(client, state, callback); },
