@@ -8,14 +8,12 @@ function consoleUpdate(){
 	process.stdout.clearLine();
 	process.stdout.cursorTo(0);
 	process.stdout.write(`Gesture Count: ${gestureCount} - Latest gesture: ${latestGesture}`);
-	// process.stdout.write(`Latest gesture: ${latestGesture}\n`);
 }
 
 controller.on('deviceFrame', function(frame) {
-	// loop through available gestures
 	for(var i = 0; i < frame.gestures.length; i++){
 		var gesture = frame.gestures[i];
-		var type    = gesture.type;          
+		var type = gesture.type;          
 
 		switch( type ){
 
