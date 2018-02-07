@@ -1,3 +1,4 @@
+const figlet = require('figlet');
 const async = require('async');
 const Client = require('krpc-node');
 const { processStreamUpdate, incrementNextLogTimer } = require('./streams.js');
@@ -62,5 +63,14 @@ const onClientCreated = (err, clientCreated) => {
 		}
 	);
 };
+
+figlet('Hello DevConf!', function(err, data) {
+	if (err) {
+		console.log('Trying to do stupid things like ascii art for your presentation is dumb and you deserve this!');
+		console.dir(err);
+		return;
+	}
+	console.log(data);
+});
 
 Client(null, onClientCreated);

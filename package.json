@@ -26,6 +26,7 @@
   "homepage": "https://github.com/jakehelme/ksp-adrduino-controller#readme",
   "dependencies": {
     "async": "2.5.0",
+    "figlet": "1.2.0",
     "johnny-five": "0.11.3",
     "krpc-node": "2.0.1",
     "moment": "2.18.1"
