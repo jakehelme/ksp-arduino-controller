@@ -1,6 +1,6 @@
 {
   "name": "ksp-arduino-controller",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "An arduino driven controller for Kerbal Space Program using Johnny-Five",
   "main": "index.js",
   "scripts": {
