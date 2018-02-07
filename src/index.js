@@ -36,7 +36,7 @@ let state = {
 	kerbinNonRotatingReferenceFrame: null
 };
 
-const clientCreated = (err, clientCreated) => {
+const onClientCreated = (err, clientCreated) => {
 	console.log('client connected');
 	if (err) {
 		throw err;
@@ -63,5 +63,4 @@ const clientCreated = (err, clientCreated) => {
 	);
 };
 
-Client(null, clientCreated);
-
+Client(null, onClientCreated);
