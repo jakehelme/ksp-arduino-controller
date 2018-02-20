@@ -62,6 +62,8 @@ const getCameraInfo = (client, state, callback) => {
 		state.camera.maxPitch = getResultN(response, 4);
 		state.camera.minDistance = getResultN(response, 5);
 		state.camera.maxDistance = getResultN(response, 6);
+		console.log(`Min dist: ${state.camera.minDistance}`);
+		console.log(`Max dist: ${state.camera.maxDistance}`);
 		return callback();
 	});
 };
