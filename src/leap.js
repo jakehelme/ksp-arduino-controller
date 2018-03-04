@@ -152,7 +152,7 @@ controller.loop(function (frame) {
 		// minMax(hand.palmPosition[2]);
 		process.stdout.clearLine();
 		process.stdout.cursorTo(0);
-		process.stdout.write(`Roll: ${toDeg(hand.roll()).toFixed(3)}\t\tPitch: ${toDeg(hand.pitch()).toFixed(3)}\t\Grab Str: ${hand.grabStrength}`);
+		process.stdout.write(`Roll: ${toDeg(hand.roll()).toFixed(3)}\t\tPitch: ${toDeg(hand.pitch()).toFixed(3)}\t\tGrab Str: ${hand.grabStrength}`);
 		// process.stdout.write(`Roll: ${toDeg(hand.roll())} deg`);
 		const roll = toDeg(hand.roll());
 		const pitch = toDeg(hand.pitch());
