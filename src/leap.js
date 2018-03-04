@@ -36,29 +36,41 @@ const onClientCreated = (err, clientCreated) => {
 		throw err;
 	}
 	client = clientCreated;
-	async.series(
-		[
-			(callback) => {
-				krpcThings.getInitialInfo(client, state, callback);
-			},
-			// (callback) => { krpcThings.connectToStreamServer(client, state, callback); },
-			(callback) => {
-				krpcThings.getVesselInfo(client, state, callback);
-			},
-			(callback) => {
-				krpcThings.getCameraInfo(client, state, callback);
-			},
-			// (callback) => { krpcThings.getKerbinReferenceFrames(client, state, callback); },
-			// (callback) => { krpcThings.getKerbinFlight(client, state, callback); },
-			// (callback) => { krpcThings.addSpeedToStream(client, state, callback); },
-			// (callback) => { krpcThings.connectBoard(client, state, callback) ;}
-		],
-		function (err) {
+
+
+	function pollGameScene() {
+		console.log('Polling');
+
+		krpcThings.getGameScene(client, state, function (err) {
 			if (err) {
 				throw err;
 			}
-		}
-	);
+
+			if (state.gameScene !== 'Flight') {
+				setTimeout(pollGameScene, 5000);
+			} else {
+				async.series(
+					[
+						(callback) => { krpcThings.getInitialInfo(client, state, callback);	},
+						// (callback) => { krpcThings.connectToStreamServer(client, state, callback); },
+						(callback) => { krpcThings.getVesselInfo(client, state, callback); },
+						(callback) => { krpcThings.getCameraInfo(client, state, callback); },
+						(callback) => { krpcThings.getKerbinReferenceFrames(client, state, callback);	},
+						(callback) => { krpcThings.getKerbinFlight(client, state, callback); },
+						// (callback) => { krpcThings.addSpeedToStream(client, state, callback);	},
+						// (callback) => { krpcThings.connectBoard(client, state, callback);	}
+					],
+					function (err) {
+						if (err) {
+							throw err;
+						}
+					}
+				);
+			}
+		});
+	}
+
+	pollGameScene();
 };
 
 Client(null, onClientCreated);
@@ -119,7 +131,7 @@ function adjustPitch(handPitch) {
 }
 
 function adjustHeading(handRoll, pitch) {
-	if(pitch < 45 && pitch > -45) {
+	if (pitch < 45 && pitch > -45) {
 		if (handRoll > 80) {
 			state.camera.heading = rollOver(state.camera.heading - 0.5, 0, 360);
 			headingChanged = true;

@@ -1,5 +1,19 @@
 const { getFirstResult, getResultN } = require('./util/getResults');
 
+const getGameScene = (client, state, callback) => {
+	let calls = [
+		client.services.krpc.getCurrentGameScene()
+	];
+	client.send(calls, function (err, response) {
+		if (err) {
+			throw new Error('not connected to KRPC');
+		}
+		state.gameScene = getResultN(response, 0);
+		console.log(`${state.gameScene}`);
+		return callback();
+	});
+};
+
 const getInitialInfo = (client, state, callback) => {
 	let calls = [
 		client.services.krpc.getClientId(),
@@ -106,6 +120,7 @@ const addSpeedToStream = (client, state, callback) => {
 };
 
 module.exports = {
+	getGameScene,
 	getInitialInfo,
 	connectToStreamServer,
 	getVesselInfo,
