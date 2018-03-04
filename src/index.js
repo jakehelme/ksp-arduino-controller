@@ -1,10 +1,10 @@
 const async = require('async');
 const Client = require('krpc-node');
 
-const leapClient = require('./leap');
-const { processStreamUpdate, incrementNextLogTimer } = require('./streams.js');
-const { connectBoard } = require('./board');
-const clientSetup = require('./setup');
+const clientSetup = require('./client/setup');
+const { processStreamUpdate, incrementNextLogTimer } = require('./client/streams');
+// const { connectBoard } = require('./hardware/board');
+const leapClient = require('./hardware/leap');
 
 let client = null;
 let state = {

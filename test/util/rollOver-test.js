@@ -15,13 +15,5 @@ describe('rollOver rolls values over between a min and max', function() {
 		const actual = rollOver(150, 0, 360);
 		assert.equal(actual, 150);
 	});
-	// it('should still work when the min is not zero', () => {
-	// 	const actual = rollOver(5, 10, 360);
-	// 	assert.equal(actual, 355);
-	// });
-	// it('should still work when the min is negative', () => {
-	// 	const actual = rollOver(-15, -10, 360);
-	// 	assert.equal(actual, 355);
-	// });
 });
 

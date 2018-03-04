@@ -1,8 +1,8 @@
-const getFirstResult = (response) => {
+function getFirstResult(response) {
 	return getResultN(response, 0);
-};
+}
 
-const getResultN = (response, n) => {
+function getResultN(response, n) {
 	if (response.error) {
 		throw response.error;
 	}
@@ -11,7 +11,7 @@ const getResultN = (response, n) => {
 		throw result.error;
 	}
 	return result.value;
-};
+}
 
 module.exports = {
 	getFirstResult,
