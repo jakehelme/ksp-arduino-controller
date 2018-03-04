@@ -92,13 +92,16 @@ let zoomChanged = false;
 // 	return (((fromLeap - leapMin) * kspRange) / leapRange) + kspMin;
 // }
 
-function grabZoom(grabStrength) {
-	if (grabStrength > 0.98) {
-		state.camera.distance = clamp(state.camera.distance - 0.5, kspMin, kspMax);
-		zoomChanged = true;
-	} else if (grabStrength < 0.02) {
-		state.camera.distance = clamp(state.camera.distance + 0.5, kspMin, kspMax);
-		zoomChanged = true;
+function grabZoom(grabStrength, pitch, roll) {
+	if (pitch > -45 && pitch < 45 &&
+		roll > -45 && roll < 45) {
+		if (grabStrength > 0.98) {
+			state.camera.distance = clamp(state.camera.distance - 0.5, kspMin, kspMax);
+			zoomChanged = true;
+		} else if (grabStrength < 0.02) {
+			state.camera.distance = clamp(state.camera.distance + 0.5, kspMin, kspMax);
+			zoomChanged = true;
+		}
 	}
 	return state.camera.distance;
 }
@@ -111,16 +114,19 @@ function adjustPitch(handPitch) {
 		state.camera.pitch = clamp(state.camera.pitch + 0.5, state.camera.minPitch, state.camera.maxPitch);
 		pitchChanged = true;
 	}
+
 	return state.camera.pitch;
 }
 
-function adjustHeading(handRoll) {
-	if (handRoll > 80) {
-		state.camera.heading = rollOver(state.camera.heading - 0.5, 0, 360);
-		headingChanged = true;
-	} else if (handRoll < -80) {
-		state.camera.heading = rollOver(state.camera.heading + 0.5, 0, 360);
-		headingChanged = true;
+function adjustHeading(handRoll, pitch) {
+	if(pitch < 45 && pitch > -45) {
+		if (handRoll > 80) {
+			state.camera.heading = rollOver(state.camera.heading - 0.5, 0, 360);
+			headingChanged = true;
+		} else if (handRoll < -80) {
+			state.camera.heading = rollOver(state.camera.heading + 0.5, 0, 360);
+			headingChanged = true;
+		}
 	}
 	return state.camera.heading;
 }
@@ -132,13 +138,15 @@ controller.loop(function (frame) {
 	for (var i in frame.handsMap) {
 		var hand = frame.handsMap[i];
 		// minMax(hand.palmPosition[2]);
-		// process.stdout.clearLine();
-		// process.stdout.cursorTo(0);
-		// process.stdout.write(`Roll: ${toDeg(hand.roll()).toFixed(3)}\t\tPitch: ${toDeg(hand.pitch()).toFixed(3)}\t\tYaw: ${toDeg(hand.yaw()).toFixed(3)}\t\tPinch Str: ${hand.pinchStrength}\t\tDistance: ${state.camera.distance}`);
+		process.stdout.clearLine();
+		process.stdout.cursorTo(0);
+		process.stdout.write(`Roll: ${toDeg(hand.roll()).toFixed(3)}\t\tPitch: ${toDeg(hand.pitch()).toFixed(3)}\t\Grab Str: ${hand.grabStrength}`);
 		// process.stdout.write(`Roll: ${toDeg(hand.roll())} deg`);
-		const newZoomDist = grabZoom(hand.grabStrength);
-		const newPitch = adjustPitch(toDeg(hand.pitch()));
-		const newHeading = adjustHeading(toDeg(hand.roll()));
+		const roll = toDeg(hand.roll());
+		const pitch = toDeg(hand.pitch());
+		const newZoomDist = grabZoom(hand.grabStrength, pitch, roll);
+		const newHeading = adjustHeading(roll, pitch);
+		const newPitch = adjustPitch(pitch);
 
 		if (pitchChanged) {
 			pitchChanged = false;
