@@ -3,7 +3,7 @@ const Client = require('krpc-node');
 
 const clientSetup = require('./client/setup');
 const { processStreamUpdate, incrementNextLogTimer } = require('./client/streams');
-// const { connectBoard } = require('./hardware/board');
+const { connectBoard } = require('./hardware/board');
 const leapClient = require('./hardware/leap');
 
 let client = null;
@@ -69,12 +69,12 @@ function onClientCreated(err, clientCreated) {
 						callback => {
 							clientSetup.getKerbinFlight(client, state, callback);
 						},
-						// callback => {
-						// 	clientSetup.addSpeedToStream(client, state, callback);
-						// },
-						// callback => {
-						// 	connectBoard(client, state, callback);
-						// },
+						callback => {
+							clientSetup.addSpeedToStream(client, state, callback);
+						},
+						callback => {
+							connectBoard(client, state, callback);
+						},
 						callback => {
 							leapClient.initLeap(callback);
 						},
