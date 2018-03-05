@@ -1,4 +1,4 @@
-const { getFirstResult, getResultN } = require('./util/getResults');
+const { getFirstResult, getResultN } = require('./../util/getResults');
 
 const getGameScene = (client, state, callback) => {
 	let calls = [

@@ -1,7 +1,7 @@
 const Leap = require('leapjs');
-const clamp = require('./util/clamp');
-const rollOver = require('./util/rollOver');
-const toDeg = require('./util/toDeg');
+const clamp = require('./../util/clamp');
+const rollOver = require('./../util/rollOver');
+const toDeg = require('./../util/toDeg');
 
 const kspMin = 0.5;
 const kspMax = 150000;

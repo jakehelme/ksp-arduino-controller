@@ -1,6 +1,6 @@
 const moment = require('moment');
-const generateDisplayString = require('./util/generateDisplayString');
-const { printToLcd } = require('./board');
+const generateDisplayString = require('./../util/generateDisplayString');
+const { printToLcd } = require('./../hardware/board');
 
 let nextLogTimer;
 const logInterval = {

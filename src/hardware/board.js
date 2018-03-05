@@ -1,5 +1,5 @@
 const five = require('johnny-five');
-const clamp = require('./util/clamp');
+const clamp = require('./../util/clamp');
 
 const joystickDeadzone = 0.03;
 let isCameraControlMode = false;
