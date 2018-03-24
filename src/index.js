@@ -45,7 +45,7 @@ function onClientCreated(err, clientCreated) {
 			if (err) {
 				throw err;
 			}
-
+			
 			if (state.gameScene !== 'Flight') {
 				setTimeout(pollGameScene, 5000);
 			} else {
@@ -74,7 +74,7 @@ function onClientCreated(err, clientCreated) {
 						},
 						callback => {
 							connectBoard(client, state, callback);
-						},
+						}, 
 						callback => {
 							leapClient.initLeap(callback);
 						},
@@ -96,4 +96,4 @@ function onClientCreated(err, clientCreated) {
 	pollGameScene();
 }
 
-Client(null, onClientCreated);
+Client({ legacy: true }, onClientCreated);

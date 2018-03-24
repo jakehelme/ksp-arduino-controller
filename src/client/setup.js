@@ -7,9 +7,8 @@ const getGameScene = (client, state, callback) => {
 	client.send(calls, function (err, response) {
 		if (err) {
 			throw new Error('not connected to KRPC');
-		}
-		state.gameScene = getResultN(response, 0);
-		console.log(`${state.gameScene}`);
+		}	
+		state.gameScene = getFirstResult(response);
 		return callback();
 	});
 };
