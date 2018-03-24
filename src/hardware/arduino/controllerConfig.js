@@ -1,0 +1,22 @@
+module.exports = {
+	joystickLeft: { pins: ['A0', 'A1'], invertY: true },
+	joystickRight: { pins: ['A2', 'A3'] },
+	joystickButtonLeft: { pin: 39, isPullup: true	},
+	joystickButtonRight: { pin: 38,	isPullup: true },
+	lcd: { pins: [7, 8, 9, 10, 11, 12],	rows: 2, cols: 16	},
+	abort: 40,
+	toggle1: 44,
+	toggle2: 43,
+	toggle3: 42,
+	toggle4: 41,
+	action1: 53,
+	action2: 52,
+	action3: 51,
+	action4: 50,
+	action5: 49,
+	action6: 48,
+	action7: 47,
+	action8: 46,
+	action9: 45,
+	slider: 'A6'
+};

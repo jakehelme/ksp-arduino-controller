@@ -1,20 +1,15 @@
 const async = require('async');
 const Client = require('krpc-node');
-const { processStreamUpdate, incrementNextLogTimer } = require('./streams.js');
-const { connectBoard } = require('./board');
-const { 
-	getInitialInfo,
-	connectToStreamServer, 
-	getVesselInfo, 
-	getCameraInfo,
-	getKerbinReferenceFrames, 
-	getKerbinFlight, 
-	addSpeedToStream 
-} = require('./setup');
+
+const clientSetup = require('./client/setup');
+const { processStreamUpdate, incrementNextLogTimer } = require('./client/streams');
+const { connectBoard } = require('./hardware/board');
+const leapClient = require('./hardware/leap');
 
 let client = null;
 let state = {
 	clientId: null,
+	gameScene: null,
 	camera: {
 		id: null,
 		minPitch: null,
@@ -36,31 +31,69 @@ let state = {
 	kerbinNonRotatingReferenceFrame: null
 };
 
-const onClientCreated = (err, clientCreated) => {
+function onClientCreated(err, clientCreated) {
 	console.log('client connected');
 	if (err) {
 		throw err;
 	}
 	client = clientCreated;
-	async.series(
-		[
-			(callback) => { getInitialInfo(client, state, callback); },
-			(callback) => { connectToStreamServer(client, state, callback); },
-			(callback) => { getVesselInfo(client, state, callback); },
-			(callback) => { getCameraInfo(client, state, callback); },
-			(callback) => { getKerbinReferenceFrames(client, state, callback); },
-			(callback) => { getKerbinFlight(client, state, callback); },
-			(callback) => { addSpeedToStream(client, state, callback); },
-			(callback) => { connectBoard(client, state, callback) ;}
-		],
-		function (err) {
+
+	function pollGameScene() {
+		console.log('Polling');
+
+		clientSetup.getGameScene(client, state, function(err) {
 			if (err) {
 				throw err;
 			}
-			client.stream.on('message', processStreamUpdate);
-			incrementNextLogTimer();
-		}
-	);
-};
+			
+			if (state.gameScene !== 'Flight') {
+				setTimeout(pollGameScene, 5000);
+			} else {
+				async.series(
+					[
+						callback => {
+							clientSetup.getInitialInfo(client, state, callback);
+						},
+						callback => {
+							clientSetup.connectToStreamServer(client, state, callback);
+						},
+						callback => {
+							clientSetup.getVesselInfo(client, state, callback);
+						},
+						callback => {
+							clientSetup.getCameraInfo(client, state, callback);
+						},
+						callback => {
+							clientSetup.getKerbinReferenceFrames(client, state, callback);
+						},
+						callback => {
+							clientSetup.getKerbinFlight(client, state, callback);
+						},
+						callback => {
+							clientSetup.addSpeedToStream(client, state, callback);
+						},
+						callback => {
+							connectBoard(client, state, callback);
+						}, 
+						callback => {
+							leapClient.initLeap(callback);
+						},
+						callback => {
+							leapClient.listenToLeap(client, state, callback);
+						}
+					],
+					function(err) {
+						if (err) {
+							throw err;
+						}
+						client.stream.on('message', processStreamUpdate);
+						incrementNextLogTimer();
+					}
+				);
+			}
+		});
+	}
+	pollGameScene();
+}
 
-Client(null, onClientCreated);
+Client({ legacy: true }, onClientCreated);

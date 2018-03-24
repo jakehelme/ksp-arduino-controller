@@ -1,4 +1,17 @@
-const { getFirstResult, getResultN } = require('./util/getResults');
+const { getFirstResult, getResultN } = require('./../util/getResults');
+
+const getGameScene = (client, state, callback) => {
+	let calls = [
+		client.services.krpc.getCurrentGameScene()
+	];
+	client.send(calls, function (err, response) {
+		if (err) {
+			throw new Error('not connected to KRPC');
+		}	
+		state.gameScene = getFirstResult(response);
+		return callback();
+	});
+};
 
 const getInitialInfo = (client, state, callback) => {
 	let calls = [
@@ -62,6 +75,8 @@ const getCameraInfo = (client, state, callback) => {
 		state.camera.maxPitch = getResultN(response, 4);
 		state.camera.minDistance = getResultN(response, 5);
 		state.camera.maxDistance = getResultN(response, 6);
+		console.log(`Min dist: ${state.camera.minDistance}`);
+		console.log(`Max dist: ${state.camera.maxDistance}`);
 		return callback();
 	});
 };
@@ -104,6 +119,7 @@ const addSpeedToStream = (client, state, callback) => {
 };
 
 module.exports = {
+	getGameScene,
 	getInitialInfo,
 	connectToStreamServer,
 	getVesselInfo,
