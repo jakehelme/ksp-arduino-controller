@@ -3,8 +3,17 @@ const clamp = require('./../util/clamp');
 const rollOver = require('./../util/rollOver');
 const toDeg = require('./../util/toDeg');
 
-const kspMin = 0.5;
-const kspMax = 150000;
+const kspZoomMin = 0.5;
+const kspZoomMax = 150000;
+
+const zoomDeadZone = 45;
+const grabStrengthCutoff = 0.02;
+const zoomSpeed = 0.25;
+const pitchSpeed = 0.3;
+const rollSpeed = 0.5;
+const pitchCutoffAngle = 80;
+const pitchCancelAngle = 45;
+const rollCutoffAngle = 80;
 
 let headingChanged = false;
 let pitchChanged = false;
@@ -13,12 +22,12 @@ let controller = null;
 
 function listenToLeap(client, state, callback) {
 	function grabZoom(grabStrength, pitch, roll) {
-		if (pitch > -45 && pitch < 45 && roll > -45 && roll < 45) {
-			if (grabStrength > 0.98) {
-				state.camera.distance = clamp(state.camera.distance - 0.5, kspMin, kspMax);
+		if (pitch > -zoomDeadZone && pitch < zoomDeadZone && roll > -zoomDeadZone && roll < zoomDeadZone) {
+			if (grabStrength > 1 - grabStrengthCutoff) {
+				state.camera.distance = clamp(state.camera.distance - zoomSpeed, kspZoomMin, kspZoomMax);
 				zoomChanged = true;
-			} else if (grabStrength < 0.02) {
-				state.camera.distance = clamp(state.camera.distance + 0.5, kspMin, kspMax);
+			} else if (grabStrength < grabStrengthCutoff) {
+				state.camera.distance = clamp(state.camera.distance + zoomSpeed, kspZoomMin, kspZoomMax);
 				zoomChanged = true;
 			}
 		}
@@ -26,11 +35,11 @@ function listenToLeap(client, state, callback) {
 	}
 
 	function adjustPitch(handPitch) {
-		if (handPitch > 80) {
-			state.camera.pitch = clamp(state.camera.pitch - 0.5, state.camera.minPitch, state.camera.maxPitch);
+		if (handPitch > pitchCutoffAngle) {
+			state.camera.pitch = clamp(state.camera.pitch - pitchSpeed, state.camera.minPitch, state.camera.maxPitch);
 			pitchChanged = true;
-		} else if (handPitch < -80) {
-			state.camera.pitch = clamp(state.camera.pitch + 0.5, state.camera.minPitch, state.camera.maxPitch);
+		} else if (handPitch < -pitchCutoffAngle) {
+			state.camera.pitch = clamp(state.camera.pitch + pitchSpeed, state.camera.minPitch, state.camera.maxPitch);
 			pitchChanged = true;
 		}
 
@@ -38,12 +47,12 @@ function listenToLeap(client, state, callback) {
 	}
 
 	function adjustHeading(handRoll, pitch) {
-		if (pitch < 45 && pitch > -45) {
-			if (handRoll > 80) {
-				state.camera.heading = rollOver(state.camera.heading - 0.5, 0, 360);
+		if (pitch < pitchCancelAngle && pitch > -pitchCancelAngle) {
+			if (handRoll > rollCutoffAngle) {
+				state.camera.heading = rollOver(state.camera.heading - rollSpeed, 0, 360);
 				headingChanged = true;
-			} else if (handRoll < -80) {
-				state.camera.heading = rollOver(state.camera.heading + 0.5, 0, 360);
+			} else if (handRoll < -rollCutoffAngle) {
+				state.camera.heading = rollOver(state.camera.heading + rollSpeed, 0, 360);
 				headingChanged = true;
 			}
 		}
@@ -53,9 +62,6 @@ function listenToLeap(client, state, callback) {
 	controller.loop(function(frame) {
 		for (var i in frame.handsMap) {
 			var hand = frame.handsMap[i];
-			// process.stdout.clearLine();
-			// process.stdout.cursorTo(0);
-			// process.stdout.write(`Roll: ${toDeg(hand.roll()).toFixed(3)}\t\tPitch: ${toDeg(hand.pitch()).toFixed(3)}\t\tGrab Str: ${hand.grabStrength}`);
 			const roll = toDeg(hand.roll());
 			const pitch = toDeg(hand.pitch());
 			const newZoomDist = grabZoom(hand.grabStrength, pitch, roll);
@@ -76,6 +82,14 @@ function listenToLeap(client, state, callback) {
 	});
 
 	return callback();
+}
+
+function disable() {
+	controller.disconnect();
+}
+
+function enable() {
+	controller.connect();
 }
 
 function initLeap(callback) {
@@ -115,5 +129,7 @@ function initLeap(callback) {
 
 module.exports = {
 	initLeap,
-	listenToLeap
+	listenToLeap,
+	disable,
+	enable
 };

@@ -1,8 +1,8 @@
 const five = require('johnny-five');
-const clamp = require('./../util/clamp');
+const leap = require('./leap');
 
 const joystickDeadzone = 0.03;
-let isCameraControlMode = false;
+const sliderSensitivity = 0.03;
 let lcd = null;
 
 const cameraModes = ['Free', 'Chase', 'Locked', 'Orbital', 'Map'];
@@ -13,8 +13,7 @@ const getNextCameraMode = () => {
 	return cameraModes[cameraModeIndex];
 };
 
-
-const getJoystickValue = (input) => {
+const getJoystickValue = input => {
 	if (input > joystickDeadzone) {
 		return input;
 	} else if (input < -joystickDeadzone) {
@@ -24,14 +23,14 @@ const getJoystickValue = (input) => {
 	}
 };
 
-const printToLcd = (input) => {
+const printToLcd = input => {
 	lcd.home().print(input);
 };
 
 const connectBoard = (client, state, callback) => {
 	const board = five.Board({
 		repl: false,
-		debug: false,
+		debug: false
 	});
 	board.on('ready', () => {
 		console.log('board connected');
@@ -52,23 +51,24 @@ const connectBoard = (client, state, callback) => {
 		const action9 = new five.Button(45);
 		const slider = new five.Sensor('A6');
 
-		const joystick1Button = new five.Button({
+		const joystickLeftButton = new five.Button({
 			pin: 39,
 			isPullup: true
 		});
 
-		const joystick2Button = new five.Button({
+		const joystickRightButton = new five.Button({
 			pin: 38,
 			isPullup: true
 		});
 
-		const joystick1 = new five.Joystick({
+		const joystickLeft = new five.Joystick({
 			pins: ['A0', 'A1'],
-			invertY: true
+			invertX: true
 		});
 
-		const joystick2 = new five.Joystick({
-			pins: ['A2', 'A3']
+		const joystickRight = new five.Joystick({
+			pins: ['A2', 'A3'],
+			invertX: true
 		});
 
 		lcd = new five.LCD({
@@ -77,116 +77,104 @@ const connectBoard = (client, state, callback) => {
 			cols: 16
 		});
 
-		joystick1Button.on('down', function () {
+		joystickLeftButton.on('down', function() {
 			client.send([client.services.spaceCenter.cameraSetMode(state.camera.id, getNextCameraMode())]);
 		});
 
-		joystick2Button.on('down', function () {
+		joystickRightButton.on('down', function() {
 			client.send([client.services.spaceCenter.controlActivateNextStage(state.vessel.controlId)]);
 		});
 
-		toggle1.on('close', function () {
+		toggle1.on('close', function() {
+			leap.disable();
+		});
+
+		toggle1.on('open', function() {
+			leap.enable();
+		});
+
+		toggle2.on('close', function() {
 			client.send(client.services.spaceCenter.controlSetLights(state.vessel.controlId, true));
 		});
 
-		toggle1.on('open', function () {
+		toggle2.on('open', function() {
 			client.send(client.services.spaceCenter.controlSetLights(state.vessel.controlId, false));
 		});
 
-		toggle2.on('close', function () {
-			isCameraControlMode = true;
-		});
-
-		toggle2.on('open', function () {
-			isCameraControlMode = false;
-		});
-
-		toggle3.on('close', function () {
+		toggle3.on('close', function() {
 			client.send(client.services.spaceCenter.controlSetRcs(state.vessel.controlId, true));
 		});
 
-		toggle3.on('open', function () {
+		toggle3.on('open', function() {
 			client.send(client.services.spaceCenter.controlSetRcs(state.vessel.controlId, false));
 		});
 
-		toggle4.on('close', function () {
+		toggle4.on('close', function() {
 			client.send(client.services.spaceCenter.controlSetSas(state.vessel.controlId, true));
 		});
 
-		toggle4.on('open', function () {
+		toggle4.on('open', function() {
 			client.send(client.services.spaceCenter.controlSetSas(state.vessel.controlId, false));
 		});
 
-		abort.on('open', function () {
+		abort.on('open', function() {
 			client.send(client.services.spaceCenter.controlSetAbort(state.vessel.controlId, false));
 		});
 
-		abort.on('close', function () {
+		abort.on('close', function() {
 			client.send(client.services.spaceCenter.controlSetAbort(state.vessel.controlId, true));
 		});
 
-		action1.on('press', function () {
+		action1.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 1));
 		});
 
-		action2.on('press', function () {
+		action2.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 2));
 		});
 
-		action3.on('press', function () {
+		action3.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 3));
 		});
 
-		action4.on('press', function () {
+		action4.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 4));
 		});
 
-		action5.on('press', function () {
+		action5.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 5));
 		});
 
-		action6.on('press', function () {
+		action6.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 6));
 		});
 
-		action7.on('press', function () {
+		action7.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 7));
 		});
 
-		action8.on('press', function () {
+		action8.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 8));
 		});
 
-		action9.on('press', function () {
+		action9.on('press', function() {
 			client.send(client.services.spaceCenter.controlToggleActionGroup(state.vessel.controlId, 9));
 		});
 
-		joystick1.on('change', function () {
-			if(isCameraControlMode){
-				state.camera.distance = clamp(state.camera.distance + getJoystickValue(this.y), state.camera.minDistance, state.camera.maxDistance);
-				client.send(client.services.spaceCenter.cameraSetDistance(state.camera.id, state.camera.distance));
-			} else {
-				client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
-			}
+		joystickLeft.on('change', function() {
+			client.send(client.services.spaceCenter.controlSetRoll(state.vessel.controlId, getJoystickValue(this.x)));
 		});
 
-		joystick2.on('change', function () {
-			if(isCameraControlMode) {
-				state.camera.pitch = clamp(state.camera.pitch + getJoystickValue(this.y), state.camera.minPitch, state.camera.maxPitch);
-				state.camera.heading += getJoystickValue(this.x);
-				client.send(client.services.spaceCenter.cameraSetPitch(state.camera.id, state.camera.pitch));
-				client.send(client.services.spaceCenter.cameraSetHeading(state.camera.id, state.camera.heading));
-			} else {
-				client.send(client.services.spaceCenter.controlSetRoll(state.vessel.controlId, getJoystickValue(this.x)));
-				client.send(client.services.spaceCenter.controlSetPitch(state.vessel.controlId, getJoystickValue(this.y)));
-			}
+		joystickRight.on('change', function() {
+			client.send(client.services.spaceCenter.controlSetYaw(state.vessel.controlId, getJoystickValue(this.x)));
+			client.send(client.services.spaceCenter.controlSetPitch(state.vessel.controlId, getJoystickValue(this.y)));
 		});
-		
-		slider.scale([0, 1]).on('change', function () {
+
+		slider.scale([0, 1]).on('change', function() {
 			let newValue = 1 - this.value;
-			if (newValue > 0.97) {
+			if (newValue > 1 - sliderSensitivity) {
 				newValue = 1;
-			} else if(newValue < 0.03) {
+			} else if (newValue < sliderSensitivity) {
 				newValue = 0;
 			}
 			client.send(client.services.spaceCenter.controlSetThrottle(state.vessel.controlId, newValue));
